@@ -1,0 +1,4 @@
+rootProject.name = "appbuild"
+include ':app'
+
+include ':RFIDAPI3Library'
