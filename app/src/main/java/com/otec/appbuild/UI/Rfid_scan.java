@@ -1,3 +1,5 @@
+
+
 package com.otec.appbuild.UI;
 
 
@@ -18,12 +20,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import com.felhr.usbserial.UsbSerialDevice;
+import com.felhr.usbserial.UsbSerialInterface;
 import com.otec.appbuild.R;
 import java.util.*;
 
 
-import com.felhr.usbserial.UsbSerialDevice;
-import com.felhr.usbserial.UsbSerialInterface;
+
 import com.otec.appbuild.utils.util;
 
 
@@ -32,8 +36,6 @@ public class Rfid_scan extends Fragment{
     public final String ACTION_USB_PERMISSION = "com.otec.appbuild.UI.USB_PERMISSION";
     private TextView output;
     private String TAG = "Rfid_scan";
-
-
 
     private UsbManager usbManager;
     private UsbDevice device;
@@ -44,88 +46,74 @@ public class Rfid_scan extends Fragment{
 
     UsbSerialInterface.UsbReadCallback  mCallback = bytes -> {
         String data;
-       try{
-           data = new String(bytes,"UTF-8");
-           data.concat("\n");
-           tvAppend(output, data);
-           }catch (Exception e){
-               new util().message(e.getLocalizedMessage(),getContext());
-           }
+        try{
+            data = new String(bytes,"UTF-8");
+            data.concat("\n");
+            tvAppend(output, data);
+        }catch (Exception e){
+            new util().message(e.getLocalizedMessage(),getContext());
+        }
     };
 
 
     private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "onReceive: "+intent.getAction());
-                if(intent.getAction().equals(ACTION_USB_PERMISSION)){
-                    boolean granted = intent.getExtras().getBoolean(UsbManager.EXTRA_PERMISSION_GRANTED);
-                    if(granted){
-                        connection = usbManager.openDevice(device);
-                        serialPort = UsbSerialDevice.createUsbSerialDevice(device,connection);
-                        if(serialPort != null){
-                            if(serialPort.open()){
-                                serialPort.setBaudRate(9600);
-                                serialPort.setDataBits(UsbSerialInterface.DATA_BITS_8);
-                                serialPort.setStopBits(UsbSerialInterface.STOP_BITS_1);
-                                serialPort.setParity(UsbSerialInterface.PARITY_NONE);
-                                serialPort.setFlowControl(UsbSerialInterface.FLOW_CONTROL_OFF);
-                                serialPort.read(mCallback);
-                                tvAppend(output,"Serial Post Started listening");
-                            }
-                            else
-                                new util().message("Post not open", getContext());
-                        } else
-                               new util().message("Post is null", getContext());
-                    }
-                    else
-                        new util().message("Permission not granted !", getContext());
+            if(intent.getAction().equals(ACTION_USB_PERMISSION)){
+                boolean granted = intent.getExtras().getBoolean(UsbManager.EXTRA_PERMISSION_GRANTED);
+                if(granted){
+
+                    connection = usbManager.openDevice(device);
+                    serialPort = UsbSerialDevice.createUsbSerialDevice(device,connection);
+
+                    if(serialPort != null){
+                        if(serialPort.open()){
+                            serialPort.setBaudRate(115200);
+                            serialPort.setDataBits(UsbSerialInterface.DATA_BITS_8);
+                            serialPort.setStopBits(UsbSerialInterface.STOP_BITS_1);
+                            serialPort.setParity(UsbSerialInterface.PARITY_NONE);
+                            serialPort.setFlowControl(UsbSerialInterface.FLOW_CONTROL_OFF);
+                            serialPort.read(mCallback);
+                            tvAppend(output,"Serial Post Started listening");
+                        }
+                        else
+                            new util().message("Post not open", getContext());
+                    } else
+                        new util().message("Post is null", getContext());
                 }
                 else
-                    if(intent.getAction().equals(UsbManager.ACTION_USB_DEVICE_ATTACHED))
-                            new util().message("Port is busy", getContext());
-                else
-                    if(intent.getAction().equals(UsbManager.ACTION_USB_DEVICE_ATTACHED))
-                        new util().message("Port is closed !", getContext());
+                    new util().message("Permission not granted !", getContext());
+            }
+            else
+            if(intent.getAction().equals(UsbManager.ACTION_USB_DEVICE_ATTACHED)) {
+                Log.d(TAG, "onReceive: Port attached");
+                CheckUsb();
+            }
+            else
+            if(intent.getAction().equals(UsbManager.ACTION_USB_DEVICE_ATTACHED))
+                new util().message("Port is closed !", getContext());
         }
     };
 
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_rfid_scan, container, false);
-        output = (TextView) view.findViewById(R.id.output);
-        new util().getDevice(getActivity());
-        SetUpUsb();
-        CheckUsb();
-        return view;
-    }
 
-    private void SetUpUsb() {
-        usbManager = (UsbManager) requireActivity().getSystemService(getActivity().USB_SERVICE);
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_USB_PERMISSION);
-        filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
-        filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
-        requireActivity().registerReceiver(broadcastReceiver, filter);
-    }
 
     private void CheckUsb(){
         HashMap<String, UsbDevice> usbDevices = usbManager.getDeviceList();
         if (!usbDevices.isEmpty()) {
             boolean keep = true;
             for (Map.Entry<String,UsbDevice> entry  : usbDevices.entrySet()) {
-                 device = entry.getValue();
-                  int deviceVID = device.getVendorId();
-                  Log.d(TAG, "CheckUsb: "+deviceVID);
-                    if (deviceVID == 0x2341){
-                        PendingIntent pi = PendingIntent.getBroadcast(getContext(), 0, new Intent(ACTION_USB_PERMISSION), 0);
-                          usbManager.requestPermission(device, pi);
-                        keep = false;
-                    } else {
-                        connection = null;
-                        device = null;
-                    }
+                device = entry.getValue();
+                int deviceVID = device.getVendorId();
+                Log.d(TAG, "CheckUsb: "+deviceVID);
+                if (deviceVID == 6790){
+                    PendingIntent pi = PendingIntent.getBroadcast(getContext(), 0, new Intent(ACTION_USB_PERMISSION), 0);
+                    usbManager.requestPermission(device, pi);
+                    keep = false;
+                } else {
+                    connection = null;
+                    device = null;
+                }
 
                 if (!keep)
                     break;
@@ -138,12 +126,32 @@ public class Rfid_scan extends Fragment{
 
 
 
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_rfid_scan, container, false);
+        output = (TextView) view.findViewById(R.id.output);
+        SetUpUsb();
+        CheckUsb();
+        return view;
+    }
+
+    private void SetUpUsb() {
+        usbManager = (UsbManager) requireActivity().getSystemService(requireActivity().USB_SERVICE);
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ACTION_USB_PERMISSION);
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+        requireActivity().registerReceiver(broadcastReceiver, filter);
+    }
+
+
+
 
 
     private void tvAppend(TextView tv, CharSequence text) {
         final TextView ftv = tv;
         final CharSequence ftext = text;
-        requireActivity().runOnUiThread(() -> ftv.append(ftext));
+        requireActivity().runOnUiThread(() -> ftv.setText(ftext));
     }
 
 

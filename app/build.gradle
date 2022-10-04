@@ -45,12 +45,13 @@ dependencies {
     implementation project(path: ':RFIDAPI3Library')
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation files('libs/usbserial.jar')
+    implementation files('libs\\ysapi.jar')
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-    // https://mvnrepository.com/artifact/javax.comm/comm
-    implementation 'org.vesalainen.comm:javaxcomm:1.0.1'
 
+
+    implementation 'com.github.felHR85:UsbSerial:6.1.0'
 
 
 

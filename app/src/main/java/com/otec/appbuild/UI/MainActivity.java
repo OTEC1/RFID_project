@@ -8,6 +8,7 @@ import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
 import com.otec.appbuild.R;
 import com.otec.appbuild.utils.util;
+import com.ys.rkapi.MyManager;
 
 
 public class MainActivity extends AppCompatActivity{
@@ -24,7 +25,7 @@ public class MainActivity extends AppCompatActivity{
             mNfcAdapter.disableReaderMode(this);
         Log.d(TAG, "onPause: ");
     }
-    
+
 
 
     @Override
